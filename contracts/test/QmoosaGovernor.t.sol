@@ -27,7 +27,10 @@ contract QmoosaGovernorTest is Test {
     address public voter1 = address(0x30);
     address public voter2 = address(0x40);
     address public attacker = address(0x99);
-    address public guardianAddress = address(0x88);
+
+    address public guardianSigner1 = address(0x81);
+    address public guardianSigner2 = address(0x82);
+    address public guardianSigner3 = address(0x83);
 
     uint256 public constant INITIAL_SUPPLY = 10_000_000 * 1e18; // 10M tokens
     uint256 public constant TIMELOCK_DELAY = 1 days;
@@ -41,17 +44,22 @@ contract QmoosaGovernorTest is Test {
         token = new QmoosaToken(INITIAL_SUPPLY, admin);
         timelock = new QmoosaTimelock(admin, TIMELOCK_DELAY);
 
+        address[] memory signers = new address[](3);
+        signers[0] = guardianSigner1;
+        signers[1] = guardianSigner2;
+        signers[2] = guardianSigner3;
+
+        guardian = new EmergencyGuardian(address(this), signers, 2); // 2-of-3 multisig threshold
+
         governor = new QmoosaGovernor(
             address(token),
             payable(address(timelock)),
+            address(guardian),
             VOTING_DELAY,
             VOTING_PERIOD,
             PROPOSAL_THRESHOLD,
             QUORUM_PERCENT
         );
-
-        guardian = new EmergencyGuardian(address(governor), guardianAddress);
-        governor.setGuardian(address(guardian));
 
         // Transfer timelock admin to governor
         timelock.setAdmin(address(governor));
@@ -83,6 +91,70 @@ contract QmoosaGovernorTest is Test {
         assertEq(token.getCurrentVotes(proposer), 500_000 * 1e18);
         assertEq(governor.proposalCount(), 0);
         assertEq(timelock.delay(), TIMELOCK_DELAY);
+        assertEq(address(governor.guardian()), address(guardian));
+    }
+
+    function test_UnauthorizedInitialGuardianInstallationFails() public {
+        vm.expectRevert(QmoosaGovernor.ZeroAddress.selector);
+        new QmoosaGovernor(
+            address(token),
+            payable(address(timelock)),
+            address(0), // ZeroAddress rejected
+            VOTING_DELAY,
+            VOTING_PERIOD,
+            PROPOSAL_THRESHOLD,
+            QUORUM_PERCENT
+        );
+    }
+
+    function test_UnauthorizedGuardianModificationReverts() public {
+        // Attacker attempts to hijack guardian authority
+        vm.prank(attacker);
+        vm.expectRevert(QmoosaGovernor.Unauthorized.selector);
+        governor.setGuardian(attacker);
+
+        // Even admin cannot arbitrarily change guardian without timelock governance proposal
+        vm.prank(admin);
+        vm.expectRevert(QmoosaGovernor.Unauthorized.selector);
+        governor.setGuardian(admin);
+    }
+
+    function test_TimelockControlledGuardianUpdateSucceeds() public {
+        // Create a new replacement guardian with 2 signers
+        address[] memory newSigners = new address[](2);
+        newSigners[0] = address(0x901);
+        newSigners[1] = address(0x902);
+        EmergencyGuardian newGuardian = new EmergencyGuardian(address(governor), newSigners, 2);
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(governor);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+        string[] memory signatures = new string[](1);
+        signatures[0] = "setGuardian(address)";
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encode(address(newGuardian));
+
+        vm.prank(proposer);
+        uint256 proposalId = governor.propose(
+            targets,
+            values,
+            signatures,
+            calldatas,
+            "Upgrade Emergency Guardian"
+        );
+
+        vm.roll(block.number + 2);
+        vm.prank(voter1);
+        governor.castVote(proposalId, 1);
+
+        vm.roll(block.number + VOTING_PERIOD + 1);
+        governor.queue(proposalId);
+
+        vm.warp(block.timestamp + TIMELOCK_DELAY + 1);
+        governor.execute(proposalId);
+
+        assertEq(address(governor.guardian()), address(newGuardian));
     }
 
     function test_FullProposalLifecycle() public {
@@ -144,11 +216,9 @@ contract QmoosaGovernorTest is Test {
     }
 
     function test_FlashLoanVoteBorrowingFails() public {
-        // Attacker starts with 0 tokens and 0 votes
         assertEq(token.balanceOf(attacker), 0);
         assertEq(token.getCurrentVotes(attacker), 0);
 
-        // Step 1: Create proposal
         address[] memory targets = new address[](1);
         targets[0] = address(target);
         uint256[] memory values = new uint256[](1);
@@ -166,23 +236,19 @@ contract QmoosaGovernorTest is Test {
             "Proposal #2: Normal proposal"
         );
 
-        // Roll into active voting block
         vm.roll(block.number + 2);
         assertEq(uint256(governor.state(proposalId)), uint256(QmoosaGovernor.ProposalState.Active));
 
-        // Step 2: Simulating Flash-Loan in the active voting block
-        // Attacker borrows 5,000,000 tokens during this active block
+        // Attacker borrows 5M tokens during the active voting block
         vm.prank(admin);
         token.transfer(attacker, 5_000_000 * 1e18);
 
         vm.prank(attacker);
         token.delegate(attacker);
 
-        // Attacker has current votes right now
         assertEq(token.getCurrentVotes(attacker), 5_000_000 * 1e18);
 
-        // Step 3: Attacker attempts to cast vote on the active proposal
-        // MUST REVERT because at proposal.startBlock (the historical checkpoint snapshot), attacker had 0 votes!
+        // Must revert because at snapshotBlock (startBlock), attacker had 0 votes
         vm.prank(attacker);
         vm.expectRevert(QmoosaGovernor.ZeroVotingPower.selector);
         governor.castVote(proposalId, 1);
@@ -205,7 +271,6 @@ contract QmoosaGovernorTest is Test {
         vm.prank(voter1);
         governor.castVote(proposalId, 1);
 
-        // Second vote must revert
         vm.prank(voter1);
         vm.expectRevert(QmoosaGovernor.AlreadyVoted.selector);
         governor.castVote(proposalId, 1);
@@ -225,17 +290,15 @@ contract QmoosaGovernorTest is Test {
 
         vm.roll(block.number + 2);
 
-        // voter2 has 200k tokens (2%), quorum is 4% (400k tokens)
+        // voter2 has 200k (2%), quorum is 4% (400k)
         vm.prank(voter2);
         governor.castVote(proposalId, 1);
 
         vm.roll(block.number + VOTING_PERIOD + 1);
-
-        // Quorum not met -> Defeated
         assertEq(uint256(governor.state(proposalId)), uint256(QmoosaGovernor.ProposalState.Defeated));
     }
 
-    function test_EmergencyGuardianVeto() public {
+    function test_EmergencyGuardianMultiSigVeto() public {
         address[] memory targets = new address[](1);
         targets[0] = address(target);
         uint256[] memory values = new uint256[](1);
@@ -251,15 +314,25 @@ contract QmoosaGovernorTest is Test {
         vm.prank(voter1);
         governor.castVote(proposalId, 1);
 
-        // Emergency Guardian detects exploit and vetoes proposal
-        vm.prank(guardianAddress);
+        // Signer 1 votes to veto (1 of 2 threshold)
+        vm.prank(guardianSigner1);
         guardian.vetoProposal(proposalId, "Exploit payload detected");
+        assertFalse(governor.state(proposalId) == QmoosaGovernor.ProposalState.Vetoed);
 
+        // Signer 2 votes to veto (2 of 2 threshold met!)
+        vm.prank(guardianSigner2);
+        guardian.vetoProposal(proposalId, "Confirmed by security committee");
         assertEq(uint256(governor.state(proposalId)), uint256(QmoosaGovernor.ProposalState.Vetoed));
     }
 
-    function test_EmergencyGuardianPauseAndUnpause() public {
-        vm.prank(guardianAddress);
+    function test_EmergencyGuardianMultiSigPauseAndUnpause() public {
+        // Signer 1 votes to pause (1 of 2 threshold)
+        vm.prank(guardianSigner1);
+        guardian.pause();
+        assertFalse(guardian.isPaused());
+
+        // Signer 2 votes to pause (threshold met)
+        vm.prank(guardianSigner2);
         guardian.pause();
         assertTrue(guardian.isPaused());
 
@@ -271,20 +344,45 @@ contract QmoosaGovernorTest is Test {
         bytes[] memory calldatas = new bytes[](1);
         calldatas[0] = abi.encode(123);
 
-        // Cannot propose while paused
+        // Propose rejected while paused
         vm.prank(proposer);
         vm.expectRevert(QmoosaGovernor.GovernancePaused.selector);
         governor.propose(targets, values, signatures, calldatas, "Prop");
 
-        // Unpause
-        vm.prank(guardianAddress);
+        // Signer 1 votes to unpause (1 of 2)
+        vm.prank(guardianSigner1);
+        guardian.unpause();
+        assertTrue(guardian.isPaused());
+
+        // Signer 2 votes to unpause (threshold met)
+        vm.prank(guardianSigner2);
         guardian.unpause();
         assertFalse(guardian.isPaused());
 
-        // Propose succeeds after unpause
+        // Now propose succeeds
         vm.prank(proposer);
         uint256 proposalId = governor.propose(targets, values, signatures, calldatas, "Prop");
         assertEq(proposalId, 1);
+    }
+
+    function test_UnauthorizedSignerCannotPauseOrVeto() public {
+        vm.prank(attacker);
+        vm.expectRevert(EmergencyGuardian.Unauthorized.selector);
+        guardian.pause();
+
+        vm.prank(attacker);
+        vm.expectRevert(EmergencyGuardian.Unauthorized.selector);
+        guardian.vetoProposal(1, "fake");
+    }
+
+    function test_DuplicateSignerVoteReverts() public {
+        vm.prank(guardianSigner1);
+        guardian.pause();
+
+        // Calling again with same signer reverts
+        vm.prank(guardianSigner1);
+        vm.expectRevert(EmergencyGuardian.AlreadyVoted.selector);
+        guardian.pause();
     }
 
     function test_ProposerThresholdEnforcement() public {
@@ -296,7 +394,6 @@ contract QmoosaGovernorTest is Test {
         bytes[] memory calldatas = new bytes[](1);
         calldatas[0] = abi.encode(123);
 
-        // voter2 only has 200k, let's test an address with < 100k
         address lowBalance = address(0x777);
         vm.prank(admin);
         token.transfer(lowBalance, 50_000 * 1e18); // 50k < 100k threshold
@@ -321,7 +418,6 @@ contract QmoosaGovernorTest is Test {
         vm.prank(proposer);
         uint256 proposalId = governor.propose(targets, values, signatures, calldatas, "Prop");
 
-        // Immediately try to vote while state is Pending
         assertEq(uint256(governor.state(proposalId)), uint256(QmoosaGovernor.ProposalState.Pending));
         vm.prank(voter1);
         vm.expectRevert(QmoosaGovernor.ProposalNotActive.selector);
@@ -343,7 +439,7 @@ contract QmoosaGovernorTest is Test {
 
         vm.prank(voter1);
         vm.expectRevert(QmoosaGovernor.InvalidVoteType.selector);
-        governor.castVote(proposalId, 3); // 3 is invalid (only 0, 1, 2)
+        governor.castVote(proposalId, 3);
     }
 
     function test_ExpiredProposalCannotExecute() public {
@@ -365,7 +461,6 @@ contract QmoosaGovernorTest is Test {
         vm.roll(block.number + VOTING_PERIOD + 1);
         governor.queue(proposalId);
 
-        // Fast forward past timelock delay AND past grace period (14 days)
         vm.warp(block.timestamp + TIMELOCK_DELAY + 15 days);
 
         assertEq(uint256(governor.state(proposalId)), uint256(QmoosaGovernor.ProposalState.Expired));
@@ -387,9 +482,36 @@ contract QmoosaGovernorTest is Test {
 
         vm.roll(block.number + 2);
 
-        vm.prank(guardianAddress);
+        // Guardian signer cancels proposal
+        vm.prank(guardianSigner1);
         governor.cancel(proposalId);
 
         assertEq(uint256(governor.state(proposalId)), uint256(QmoosaGovernor.ProposalState.Canceled));
+    }
+
+    // Fuzz tests
+    function testFuzz_VotingWeightSnapshot(uint96 transferAmount) public {
+        vm.assume(transferAmount > 0 && transferAmount < 1_000_000 * 1e18);
+
+        address fuzzVoter = address(0x555);
+        vm.prank(admin);
+        token.transfer(fuzzVoter, transferAmount);
+
+        vm.prank(fuzzVoter);
+        token.delegate(fuzzVoter);
+
+        uint256 currentBlock = block.number;
+        vm.roll(currentBlock + 1);
+
+        assertEq(token.getPastVotes(fuzzVoter, currentBlock), transferAmount);
+    }
+
+    function testFuzz_QuorumCalculations(uint96 supply, uint8 num) public pure {
+        vm.assume(num > 0 && num <= 100);
+        vm.assume(supply > 1000);
+
+        uint256 q = (uint256(supply) * uint256(num)) / 100;
+        assertTrue(q <= supply);
+        assertTrue(q > 0);
     }
 }

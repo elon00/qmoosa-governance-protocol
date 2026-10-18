@@ -78,8 +78,10 @@ contract QmoosaGovernor {
     event ProposalQueued(uint256 indexed proposalId, uint256 eta);
     event ProposalExecuted(uint256 indexed proposalId);
     event ProposalCanceled(uint256 indexed proposalId);
+    event GuardianUpdated(address indexed previousGuardian, address indexed newGuardian);
 
     error Unauthorized();
+    error ZeroAddress();
     error ProposalNotActive();
     error AlreadyVoted();
     error InvalidVoteType();
@@ -102,24 +104,29 @@ contract QmoosaGovernor {
     constructor(
         address _token,
         address payable _timelock,
+        address _guardian,
         uint256 _votingDelay,
         uint256 _votingPeriod,
         uint256 _proposalThreshold,
         uint256 _quorumNumerator
     ) {
+        if (_token == address(0) || _timelock == address(0) || _guardian == address(0)) revert ZeroAddress();
         token = QmoosaToken(_token);
         timelock = QmoosaTimelock(_timelock);
+        guardian = EmergencyGuardian(_guardian);
         votingDelay = _votingDelay;
         votingPeriod = _votingPeriod;
         proposalThreshold = _proposalThreshold;
         quorumNumerator = _quorumNumerator;
+        emit GuardianUpdated(address(0), _guardian);
     }
 
     function setGuardian(address _guardian) external {
-        if (address(guardian) != address(0)) {
-            if (msg.sender != address(timelock) && msg.sender != guardian.guardian()) revert Unauthorized();
-        }
+        if (msg.sender != address(timelock)) revert Unauthorized();
+        if (_guardian == address(0)) revert ZeroAddress();
+        address previous = address(guardian);
         guardian = EmergencyGuardian(_guardian);
+        emit GuardianUpdated(previous, _guardian);
     }
 
     function hashProposal(
@@ -319,7 +326,7 @@ contract QmoosaGovernor {
         Proposal storage p = proposals[proposalId];
         bool isProposer = (msg.sender == p.proposer);
         bool proposerLostThreshold = (token.getPastVotes(p.proposer, block.number - 1) < proposalThreshold);
-        bool isGuardian = (address(guardian) != address(0) && msg.sender == guardian.guardian());
+        bool isGuardian = (address(guardian) != address(0) && (msg.sender == address(guardian) || guardian.isSigner(msg.sender)));
 
         if (!isGuardian && (!isProposer || !proposerLostThreshold)) {
             // Proposer can cancel if they lost threshold, or guardian can cancel
