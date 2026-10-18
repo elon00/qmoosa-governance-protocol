@@ -1,0 +1,36 @@
+{
+  "name": "@qmoosa/governance-protocol",
+  "version": "1.0.0",
+  "description": "QMOOSA Governance Protocol — Checkpointed Voting Power, Timelock Invariants & Autonomous Governor Contracts",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "contracts/src",
+    "contracts/foundry.toml",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test tests/protocol.test.mjs && cd contracts && forge test -vv",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "typescript": "^5.4.5"
+  },
+  "keywords": [
+    "qmoosa",
+    "governance",
+    "timelock",
+    "voting",
+    "checkpoints",
+    "protocol",
+    "solidity",
+    "foundry",
+    "defi"
+  ],
+  "author": "elon00",
+  "license": "MIT"
+}
