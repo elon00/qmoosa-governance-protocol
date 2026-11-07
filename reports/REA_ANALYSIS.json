@@ -1,0 +1,269 @@
+{
+  "engine": "REA_Reverse_Engineer_Anything",
+  "status": "STRUCTURE_RECONSTRUCTED",
+  "analyzed_files": 87,
+  "manifest": {
+    "package-lock.json": {
+      "bytes": 1538
+    },
+    "package.json": {
+      "bytes": 863
+    },
+    "README.md": {
+      "bytes": 1230
+    },
+    "tsconfig.json": {
+      "bytes": 327
+    },
+    "contracts\\foundry.toml": {
+      "bytes": 319
+    },
+    "scripts\\rea_inspector.py": {
+      "bytes": 1485
+    },
+    "scripts\\rsi_engine.py": {
+      "bytes": 2039
+    },
+    "src\\index.ts": {
+      "bytes": 4628
+    },
+    "tests\\protocol.test.mjs": {
+      "bytes": 4763
+    },
+    "tests\\reality_check_harness.py": {
+      "bytes": 1250
+    },
+    ".github\\workflows\\ci.yml": {
+      "bytes": 930
+    },
+    ".github\\workflows\\qmoosa-rsi-rea-sync.yml": {
+      "bytes": 531
+    },
+    "contracts\\src\\EmergencyGuardian.sol": {
+      "bytes": 4756
+    },
+    "contracts\\src\\QmoosaGovernor.sol": {
+      "bytes": 12644
+    },
+    "contracts\\src\\QmoosaTimelock.sol": {
+      "bytes": 4408
+    },
+    "contracts\\src\\QmoosaToken.sol": {
+      "bytes": 7956
+    },
+    "contracts\\test\\QmoosaGovernor.t.sol": {
+      "bytes": 19033
+    },
+    "contracts\\lib\\forge-std\\CONTRIBUTING.md": {
+      "bytes": 11817
+    },
+    "contracts\\lib\\forge-std\\foundry.toml": {
+      "bytes": 639
+    },
+    "contracts\\lib\\forge-std\\LICENSE-APACHE": {
+      "bytes": 11100
+    },
+    "contracts\\lib\\forge-std\\LICENSE-MIT": {
+      "bytes": 1098
+    },
+    "contracts\\lib\\forge-std\\package.json": {
+      "bytes": 533
+    },
+    "contracts\\lib\\forge-std\\README.md": {
+      "bytes": 11464
+    },
+    "contracts\\lib\\forge-std\\RELEASE_CHECKLIST.md": {
+      "bytes": 533
+    },
+    "contracts\\lib\\forge-std\\.github\\CODEOWNERS": {
+      "bytes": 55
+    },
+    "contracts\\lib\\forge-std\\.github\\dependabot.yml": {
+      "bytes": 374
+    },
+    "contracts\\lib\\forge-std\\scripts\\vm.py": {
+      "bytes": 18776
+    },
+    "contracts\\lib\\forge-std\\src\\Base.sol": {
+      "bytes": 2296
+    },
+    "contracts\\lib\\forge-std\\src\\Config.sol": {
+      "bytes": 2719
+    },
+    "contracts\\lib\\forge-std\\src\\console.sol": {
+      "bytes": 72638
+    },
+    "contracts\\lib\\forge-std\\src\\console2.sol": {
+      "bytes": 135
+    },
+    "contracts\\lib\\forge-std\\src\\LibVariable.sol": {
+      "bytes": 18464
+    },
+    "contracts\\lib\\forge-std\\src\\safeconsole.sol": {
+      "bytes": 422175
+    },
+    "contracts\\lib\\forge-std\\src\\Script.sol": {
+      "bytes": 1140
+    },
+    "contracts\\lib\\forge-std\\src\\StdAssertions.sol": {
+      "bytes": 60129
+    },
+    "contracts\\lib\\forge-std\\src\\StdChains.sol": {
+      "bytes": 16369
+    },
+    "contracts\\lib\\forge-std\\src\\StdCheats.sol": {
+      "bytes": 40072
+    },
+    "contracts\\lib\\forge-std\\src\\StdConfig.sol": {
+      "bytes": 31442
+    },
+    "contracts\\lib\\forge-std\\src\\StdConstants.sol": {
+      "bytes": 1912
+    },
+    "contracts\\lib\\forge-std\\src\\StdError.sol": {
+      "bytes": 1948
+    },
+    "contracts\\lib\\forge-std\\src\\StdInvariant.sol": {
+      "bytes": 7425
+    },
+    "contracts\\lib\\forge-std\\src\\StdJson.sol": {
+      "bytes": 15129
+    },
+    "contracts\\lib\\forge-std\\src\\StdMath.sol": {
+      "bytes": 3006
+    },
+    "contracts\\lib\\forge-std\\src\\StdSecp256k1.sol": {
+      "bytes": 6272
+    },
+    "contracts\\lib\\forge-std\\src\\StdStorage.sol": {
+      "bytes": 26954
+    },
+    "contracts\\lib\\forge-std\\src\\StdStyle.sol": {
+      "bytes": 17915
+    },
+    "contracts\\lib\\forge-std\\src\\StdToml.sol": {
+      "bytes": 14420
+    },
+    "contracts\\lib\\forge-std\\src\\StdUtils.sol": {
+      "bytes": 12227
+    },
+    "contracts\\lib\\forge-std\\src\\Test.sol": {
+      "bytes": 1347
+    },
+    "contracts\\lib\\forge-std\\src\\Vm.sol": {
+      "bytes": 165622
+    },
+    "contracts\\lib\\forge-std\\test\\CommonBase.t.sol": {
+      "bytes": 1377
+    },
+    "contracts\\lib\\forge-std\\test\\Config.t.sol": {
+      "bytes": 18598
+    },
+    "contracts\\lib\\forge-std\\test\\LibVariable.t.sol": {
+      "bytes": 17248
+    },
+    "contracts\\lib\\forge-std\\test\\StdAssertions.t.sol": {
+      "bytes": 4940
+    },
+    "contracts\\lib\\forge-std\\test\\StdChains.t.sol": {
+      "bytes": 9993
+    },
+    "contracts\\lib\\forge-std\\test\\StdCheats.t.sol": {
+      "bytes": 25691
+    },
+    "contracts\\lib\\forge-std\\test\\StdConstants.t.sol": {
+      "bytes": 1369
+    },
+    "contracts\\lib\\forge-std\\test\\StdError.t.sol": {
+      "bytes": 2834
+    },
+    "contracts\\lib\\forge-std\\test\\StdJson.t.sol": {
+      "bytes": 3296
+    },
+    "contracts\\lib\\forge-std\\test\\StdMath.t.sol": {
+      "bytes": 8914
+    },
+    "contracts\\lib\\forge-std\\test\\StdSecp256k1.t.sol": {
+      "bytes": 4508
+    },
+    "contracts\\lib\\forge-std\\test\\StdStorage.t.sol": {
+      "bytes": 25691
+    },
+    "contracts\\lib\\forge-std\\test\\StdStyle.t.sol": {
+      "bytes": 5987
+    },
+    "contracts\\lib\\forge-std\\test\\StdToml.t.sol": {
+      "bytes": 1335
+    },
+    "contracts\\lib\\forge-std\\test\\StdUtils.t.sol": {
+      "bytes": 15259
+    },
+    "contracts\\lib\\forge-std\\test\\Vm.t.sol": {
+      "bytes": 692
+    },
+    "contracts\\lib\\forge-std\\.github\\workflows\\ci.yml": {
+      "bytes": 6101
+    },
+    "contracts\\lib\\forge-std\\.github\\workflows\\scan-github-actions.yml": {
+      "bytes": 419
+    },
+    "contracts\\lib\\forge-std\\.github\\workflows\\sync.yml": {
+      "bytes": 1153
+    },
+    "contracts\\lib\\forge-std\\src\\interfaces\\IERC1155.sol": {
+      "bytes": 7731
+    },
+    "contracts\\lib\\forge-std\\src\\interfaces\\IERC165.sol": {
+      "bytes": 571
+    },
+    "contracts\\lib\\forge-std\\src\\interfaces\\IERC20.sol": {
+      "bytes": 2132
+    },
+    "contracts\\lib\\forge-std\\src\\interfaces\\IERC4626.sol": {
+      "bytes": 12172
+    },
+    "contracts\\lib\\forge-std\\src\\interfaces\\IERC6909.sol": {
+      "bytes": 3575
+    },
+    "contracts\\lib\\forge-std\\src\\interfaces\\IERC721.sol": {
+      "bytes": 9227
+    },
+    "contracts\\lib\\forge-std\\src\\interfaces\\IERC7540.sol": {
+      "bytes": 6857
+    },
+    "contracts\\lib\\forge-std\\src\\interfaces\\IERC7575.sol": {
+      "bytes": 12846
+    },
+    "contracts\\lib\\forge-std\\src\\interfaces\\IMulticall3.sol": {
+      "bytes": 2209
+    },
+    "contracts\\lib\\forge-std\\test\\compilation\\CompilationScript.sol": {
+      "bytes": 397
+    },
+    "contracts\\lib\\forge-std\\test\\compilation\\CompilationScriptBase.sol": {
+      "bytes": 409
+    },
+    "contracts\\lib\\forge-std\\test\\compilation\\CompilationStdSecp256k1.sol": {
+      "bytes": 1604
+    },
+    "contracts\\lib\\forge-std\\test\\compilation\\CompilationTest.sol": {
+      "bytes": 389
+    },
+    "contracts\\lib\\forge-std\\test\\compilation\\CompilationTestBase.sol": {
+      "bytes": 401
+    },
+    "contracts\\lib\\forge-std\\test\\fixtures\\broadcast.log.json": {
+      "bytes": 11141
+    },
+    "contracts\\lib\\forge-std\\test\\fixtures\\config.toml": {
+      "bytes": 1916
+    },
+    "contracts\\lib\\forge-std\\test\\fixtures\\test.json": {
+      "bytes": 80
+    },
+    "contracts\\lib\\forge-std\\test\\fixtures\\test.toml": {
+      "bytes": 49
+    }
+  },
+  "timestamp": 1794022912
+}
