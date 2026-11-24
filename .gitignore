@@ -5,3 +5,6 @@ contracts/out/
 contracts/cache/
 *.tgz
 .DS_Store
+
+# Lean 4 build artifacts
+lean_verify/.lake/
